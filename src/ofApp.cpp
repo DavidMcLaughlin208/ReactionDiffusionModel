@@ -10,6 +10,8 @@ void ofApp::setup(){
 
 	loadShaders();
 
+	setupGui();
+
 	ofBackground(0);
 	ofEnableBlendMode(OF_BLENDMODE_ADD);
 
@@ -26,11 +28,15 @@ void ofApp::setup(){
 
 	auto modifiedTrailBuffer = cellsBuffer.dst->map<glm::vec2>(GL_READ_WRITE);
 	int i = 1;
+
+
+	aColor.setHsb(0, 0, 0);
+	bColor.setHsb(0, 0, 100);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	ofSetWindowTitle(ofToString(ofGetMouseY()));
+	ofSetWindowTitle(ofToString(ofGetFrameRate()));
 
 	// Swap buffers and rebind to respective locations
 	cellsBuffer.swap();
@@ -40,6 +46,13 @@ void ofApp::update(){
 	// Compute Shader
 	computeShader.begin();
 	computeShader.setUniform1i("cellsSize", cells.size());
+	computeShader.setUniform1i("rowLength", width);
+	computeShader.setUniform1i("columnHeight", height);
+	computeShader.setUniform1f("diffusionRateA", diffusionRateASlider);
+	computeShader.setUniform1f("diffusionRateB", diffusionRateBSlider);
+	computeShader.setUniform1f("feedRateA", feedRateASlider/10.0);
+	computeShader.setUniform1f("killRateB", killRateBSlider/10.0);
+	computeShader.setUniform1f("timeScale", 1.0);
 	computeShader.dispatchCompute(cells.size() / 1024, 1, 1);
 	computeShader.end();
 }
@@ -53,15 +66,28 @@ void ofApp::draw(){
 	shader.setUniform1i("cellsSize", cells.size());
 	shader.setUniform1f("xRatio", float(ofGetWidth() - guiWidth) / float(width));
 	shader.setUniform1f("yRatio", float(ofGetHeight()) / float(height));
+	shader.setUniform4f("aColor", aColor);
+	shader.setUniform4f("bColor", bColor);
 	ofDrawRectangle(0, 0, ofGetWidth() - guiWidth, ofGetHeight());
 	//ofDrawRectangle(0, 0, width, height*2);
 	shader.end();
+
+	gui.draw();
 }
 
 void ofApp::loadShaders() {
 	shader.load("Shaders/shader");
 	computeShader.setupShaderFromFile(GL_COMPUTE_SHADER, "Shaders/shader.compute");
 	computeShader.linkProgram();
+}
+
+void ofApp::setupGui() {
+	gui.setup();
+	gui.add(diffusionRateASlider.setup("DiffusionRateA", 1.0, 0, 1));
+	gui.add(diffusionRateBSlider.setup("DiffusionRateB", 0.5, 0, 1));
+	gui.add(feedRateASlider.setup("FeedRateA", 0.55, 0, 1));
+	gui.add(killRateBSlider.setup("KillRateB", 0.062, 0, 1));
+	gui.setPosition(ofGetWidth() - guiWidth, 10);
 }
 
 //--------------------------------------------------------------

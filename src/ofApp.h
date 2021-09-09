@@ -42,6 +42,7 @@ class ofApp : public ofBaseApp{
 		void update();
 		void draw();
 		void loadShaders();
+		void setupGui();
 
 		void keyPressed(int key);
 		void keyReleased(int key);
@@ -65,5 +66,15 @@ class ofApp : public ofBaseApp{
 		int width; 
 		int height;
 		int guiWidth = 200;
+
+		ofColor aColor;
+		ofColor bColor;
+
+
+		ofxPanel gui;
+		ofxFloatSlider diffusionRateASlider;
+		ofxFloatSlider diffusionRateBSlider;
+		ofxFloatSlider feedRateASlider;
+		ofxFloatSlider killRateBSlider;
 		
 };

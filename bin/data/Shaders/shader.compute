@@ -9,15 +9,54 @@ layout(std430, binding = 1) buffer newMap {
 };
 
 uniform int cellsSize;
+uniform int rowLength;
+uniform int columnHeight;
+uniform float diffusionRateA;
+uniform float diffusionRateB;
+uniform float feedRateA;
+uniform float killRateB;
+uniform float timeScale;
 
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 void main() {
 	if (gl_GlobalInvocationID.x > cellsSize - 1) {
 		return;
 	}
-	if (gl_GlobalInvocationID.x < cellsSize) {
-		newCells[gl_GlobalInvocationID.x].x += 0.01;
+	int y = int(gl_GlobalInvocationID.x) / rowLength;
+	int x = int(gl_GlobalInvocationID.x) - y * rowLength;
+	
+	float oldA = oldCells[gl_GlobalInvocationID.x].x;
+	float oldB = oldCells[gl_GlobalInvocationID.x].y;
+
+	vec2 sum = vec2(0, 0);
+	for (int modX = -1; modX <= 1; modX++) {
+		int targetX = x + modX;
+		if (targetX < 0 || targetX > rowLength - 1) {
+			continue;
+		}
+		for (int modY = -1; modY <= 1; modY++) {
+			int targetY = y + modY;
+			if (targetY < 0 || targetY > columnHeight - 1 || (targetX == 0 && targetY == 0)) {
+				continue;
+			}
+			int index = targetX + (targetY * rowLength);
+			sum += oldCells[index];
+		}
 	}
 	
+	float aDiff = sum.x/8.0 - oldA;
+	float bDiff = sum.y/8.0 - oldB;
+
+	float reactionRate = oldA * (oldB * oldB);
+
+	float newA = oldA + ((diffusionRateA * aDiff) - reactionRate + (feedRateA * (1.0 - oldA)) * timeScale);
+	float newB = oldB + ((diffusionRateB * bDiff) + reactionRate - ((killRateB + feedRateA) * oldB) * timeScale);
+	newA = min(newA, 1.0);
+	newA = max(0.0, newA);
+	newB = min(newB, 1.0);
+	newB = max(0.0, newB);
+
+	newCells[gl_GlobalInvocationID.x].x = newA;
+	newCells[gl_GlobalInvocationID.x].y = newB;
 
 }
