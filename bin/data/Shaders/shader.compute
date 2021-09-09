@@ -1,6 +1,23 @@
 #version 440
 
+layout(std430, binding = 0) buffer oldMap {
+	vec2 oldCells[];
+};
+
+layout(std430, binding = 1) buffer newMap {
+	vec2 newCells[];
+};
+
+uniform int cellsSize;
+
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 void main() {
+	if (gl_GlobalInvocationID.x > cellsSize - 1) {
+		return;
+	}
+	if (gl_GlobalInvocationID.x < cellsSize) {
+		newCells[gl_GlobalInvocationID.x].x += 0.01;
+	}
+	
 
 }
